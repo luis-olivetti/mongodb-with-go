@@ -24,7 +24,7 @@ func main() {
 
 	client, err := mongo.Connect(context.TODO(), clientOptions)
 	if err != nil {
-		fmt.Println("Erro de conexão com Mongo: ", err)
+		fmt.Println("Mongo.Connect Error: ", err)
 		os.Exit(1)
 	}
 
@@ -33,36 +33,58 @@ func main() {
 	collection := client.Database("MeuDb").Collection("Filmes")
 	fmt.Println("Collection Type: ", reflect.TypeOf(collection))
 
-	oneDoc := Filme{
-		Nome:       "Rocky",
-		Nota:       10,
+	filmes := []interface{}{
+		Filme{
+			Nome:       "Rocky",
+			Nota:       10,
+			Lancamento: false,
+		},
+		Filme{
+			Nome:       "Carter",
+			Nota:       7,
+			Lancamento: true,
+		},
+		Filme{
+			Nome:       "Hulk",
+			Nota:       6,
+			Lancamento: false,
+		},
+	}
+
+	resultMany, insertErr := collection.InsertMany(ctx, filmes)
+	if insertErr != nil {
+		fmt.Println("InsertMany Error:", insertErr)
+		os.Exit(1)
+	} else {
+		fmt.Println("InsertMany(), newIDs", resultMany.InsertedIDs)
+	}
+
+	filme := Filme{
+		Nome:       "Thor",
+		Nota:       6,
 		Lancamento: false,
 	}
 
-	fmt.Println("oneDoc Type: ", reflect.TypeOf(oneDoc))
-
-	result, insertErr := collection.InsertOne(ctx, oneDoc)
+	resultOne, insertErr := collection.InsertOne(ctx, filme)
 	if insertErr != nil {
-		fmt.Println("InsertONE Error:", insertErr)
+		fmt.Println("InsertOne Error:", insertErr)
 		os.Exit(1)
 	} else {
-		fmt.Println("InsertOne() result type: ", reflect.TypeOf(result))
-		fmt.Println("InsertOne() api result type: ", result)
-
-		newID := result.InsertedID
+		newID := resultOne.InsertedID
 		fmt.Println("InsertedOne(), newID", newID)
-		fmt.Println("InsertedOne(), newID type:", reflect.TypeOf(newID))
 	}
 
+	// Consultar registros da collection
 	cursor, err := collection.Find(ctx, bson.M{})
 	if err != nil {
-		fmt.Println("Leitura Error:", err)
+		fmt.Println("Find Error:", err)
 		os.Exit(1)
 	}
 
-	var dados []bson.M
-	if err = cursor.All(ctx, &dados); err != nil {
-		fmt.Println("Leitura de dados Error:", err)
+	var data []bson.M
+	err = cursor.All(ctx, &data)
+	if err != nil {
+		fmt.Println("Cursor All Error:", err)
 	}
-	fmt.Println(dados)
+	fmt.Println(data)
 }
